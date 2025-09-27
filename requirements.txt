@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pandas
+xarray
+scipy
+netcdf4
+numpy
+folium
+torch
+transformers
+accelerate
+faiss-cpu
+sentence-transformers
