@@ -14,6 +14,17 @@ pnpm dev
 bun dev
 ```
 
+Secondly, run the server:
+1.  **Create a virtual environment:**
+    `python -m venv venv`
+    `source venv/bin/activate`
+
+2.  **Install dependencies:**
+    `pip install -r requirements.txt`
+
+3.  **Run the application:**
+    `uvicorn main:app --reload`
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
