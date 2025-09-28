@@ -2,15 +2,15 @@ import sqlite3
 import pandas as pd
 
 DB_PATH = "argo_data.db"
-TABLE_NAME = "argo_data"
 
 
-def store_to_sqlite(df: pd.DataFrame):
-    """Stores DataFrame into the SQLite database."""
+def store_to_sqlite(df: pd.DataFrame, table_name: str = "data"):
+    """Stores DataFrame into a specific SQLite table."""
     conn = sqlite3.connect(DB_PATH)
-    df.to_sql(TABLE_NAME, conn, if_exists="replace", index=False)
+    # Use the provided table_name argument
+    df.to_sql(table_name, conn, if_exists="replace", index=False)
     conn.close()
-    print(f"✅ Data stored in SQLite table '{TABLE_NAME}'.")
+    print(f"Data stored in SQLite table '{table_name}'.")
 
 
 def execute_sql_query(sql_query: str):
