@@ -33,6 +33,12 @@ export default function ChatPage() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [showChatHistory, setShowChatHistory] = useState(false);
 	const [showQuickExamples, setShowQuickExamples] = useState(false);
+	const messagesEndRef = useRef<HTMLDivElement>(null);
+
+	// Auto-scroll to bottom when new messages are added
+	useEffect(() => {
+		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+	}, [messages]);
 
 	const handleSendMessage = async (content: string) => {
 		const userMessage: Message = {
@@ -117,23 +123,36 @@ export default function ChatPage() {
 	// NOTE: Simplified component state for integration. Authentication and history logic removed to resolve compilation errors.
 
 	return (
-		<div className="h-[100vh] bg-background">
+		<div className="h-screen flex flex-col bg-background">
 			<Navbar />
 
-			<div className="relative flex justify-center items-center p-10">
-				{/* Sidebars are placeholders and can be wired up as needed */}
+			{/* Main Container */}
+			<div className="flex flex-1 relative overflow-hidden">
+				{/* Sidebars */}
 				<ChatHistorySidebar
 					isOpen={showChatHistory}
-					onClose={() => setShowChatHistory(false)}
+					onClose={() => setShowChatHistory(false)} 
+					onNewChat={function (): void {
+						throw new Error("Function not implemented.");
+					}} 
+					onSelectChat={function (chatId: string): void {
+						throw new Error("Function not implemented.");
+					}} 
+					activeChat={""} 
+					chatHistory={[]}				
 				/>
 				<QuickExamplesSidebar
 					isOpen={showQuickExamples}
-					onClose={() => setShowQuickExamples(false)}
+					onClose={() => setShowQuickExamples(false)} 
+					onSelectExample={function (example: string): void {
+						throw new Error("Function not implemented.");
+					}}				
 				/>
 
-				{/* Main Chat Area */}
-				<div className="container max-w-6xl py-6">
-					<div className="flex items-center justify-between mb-6">
+				{/* Main Chat Container */}
+				<div className="flex-1 flex flex-col max-w-6xl mx-auto w-full px-4 py-6">
+					{/* Header */}
+					<div className="flex items-center justify-between mb-4 flex-shrink-0">
 						<div className="flex items-center gap-4">
 							<Button
 								variant="outline"
@@ -159,30 +178,55 @@ export default function ChatPage() {
 						</div>
 					</div>
 
-					<div className="flex flex-col h-[calc(100vh-12rem)]">
-						<Card className="flex-1 flex flex-col">
-							<ScrollArea className="flex-1 p-4">
-								<div className="space-y-4 max-w-4xl mx-auto">
+					{/* Chat Messages Container */}
+					<Card className="flex-1 flex flex-col min-h-0">
+						{/* Messages Area - Scrollable */}
+						<div className="flex-1 overflow-hidden">
+							<ScrollArea className="h-full">
+								<div className="p-4 space-y-4">
 									{messages.map((message) => (
-										<ChatMessage
+										<div
 											key={message.id}
-											message={message.content}
-											isUser={message.isUser}
-											timestamp={message.timestamp}
-											isHtml={message.isHtml}
-										/>
+											className={`flex ${
+												message.isUser 
+													? "justify-end" 
+													: "justify-start"
+											}`}
+										>
+											<div
+												className={`max-w-[80%] rounded-lg px-4 py-3 ${
+													message.isUser
+														? "bg-primary text-primary-foreground ml-12"
+														: "bg-muted text-muted-foreground mr-12"
+												}`}
+											>
+												<ChatMessage
+													message={message.content}
+													isUser={message.isUser}
+													timestamp={message.timestamp}
+													isHtml={message.isHtml}
+												/>
+											</div>
+										</div>
 									))}
 									{isLoading && (
-										<ChatMessage
-											// message="Analyzing your query and fetching ocean data..."
-											message="Thinking..."
-											isUser={false}
-											timestamp={new Date().toLocaleTimeString()}
-										/>
+										<div className="flex justify-start">
+											<div className="max-w-[80%] rounded-lg px-4 py-3 bg-muted text-muted-foreground mr-12">
+												<ChatMessage
+													message="Thinking..."
+													isUser={false}
+													timestamp={new Date().toLocaleTimeString()}
+												/>
+											</div>
+										</div>
 									)}
+									<div ref={messagesEndRef} />
 								</div>
 							</ScrollArea>
+						</div>
 
+						{/* Input Area - Fixed at bottom */}
+						<div className="border-t bg-background p-4 flex-shrink-0">
 							<div className="max-w-4xl mx-auto w-full">
 								<ChatInput
 									onSendMessage={handleSendMessage}
@@ -190,8 +234,8 @@ export default function ChatPage() {
 									placeholder="Ask about the uploaded ocean data..."
 								/>
 							</div>
-						</Card>
-					</div>
+						</div>
+					</Card>
 				</div>
 			</div>
 		</div>

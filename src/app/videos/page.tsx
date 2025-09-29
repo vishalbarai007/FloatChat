@@ -148,7 +148,7 @@ export default function VideosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#061420]">
       <Navbar />
 
       <div className="flex items-center justify-center ">

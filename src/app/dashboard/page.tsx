@@ -218,7 +218,7 @@ export default function DashboardPage() {
   const userTypeInfo = getUserTypeInfo()
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#061420]">
       <Navbar />
 
       <div className="flex justify-center items-center">

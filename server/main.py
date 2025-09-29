@@ -121,6 +121,6 @@ async def chatbot_response(query: str = Form(...)):
                 }
             )
     else:  # Handles 'chitchat'
-        print(f"🔍 Intent: Chitchat")
+        print(f"Intent: Chitchat")
         chitchat_response = generate_chitchat_response(query)
         return JSONResponse(content={"message": chitchat_response})
