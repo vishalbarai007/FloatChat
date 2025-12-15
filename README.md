@@ -1,47 +1,121 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# 🌊 FloatChat - AI-Powered Ocean Data Exploration
 
-First, run the development server:
+**FloatChat** is an advanced ocean analytics platform designed to transform oceanographic research. By combining **interactive 3D visualization** with **AI-driven natural language processing**, FloatChat allows researchers and enthusiasts to explore complex ARGO float data, visualize global ocean monitoring networks, and uncover insights through simple conversation.
+
+## 📸 Project Previews
+
+| **Landing Page** | **Interactive Globe** |
+|:---:|:---:|
+| <img width="100%" alt="Landing Page" src="https://github.com/user-attachments/assets/83ec67c0-77c9-42fe-b52b-a9315463e78f" /> | <img width="100%" alt="Interactive Globe" src="https://github.com/user-attachments/assets/76402324-3833-4492-a197-d97439bea2f3" /> |
+
+| **AI Chat Interface** | **Data Dashboard** |
+|:---:|:---:|
+| <img width="100%" alt="AI Chat Interface" src="https://github.com/user-attachments/assets/f9f9ec9c-5f2a-423c-bad0-632f74b709f1" /> | <img width="100%" alt="Data Dashboard" src="https://github.com/user-attachments/assets/254c9954-da89-48d6-8144-49b688720011" /> |
+
+-----
+
+## 🚀 Key Features
+
+* **AI Conversational Interface**: Query ocean data using natural language. The system translates questions into SQL/Data queries using LLMs (Large Language Models).
+* **Interactive 3D Globe**: Visualize ARGO float locations and trajectories on a rendered 3D Earth using `Three.js` and `@react-three/fiber`.
+* **Dynamic Dashboards**: View real-time charts, salinity maps, and temperature profiles utilizing `Recharts`.
+* **NetCDF Data Processing**: Upload and process raw `.nc` (NetCDF) files directly through the platform.
+* **Authentication System**: Secure login, registration, and guest access modes.
+* **Research Grade Data**: Tools for analyzing temperature, salinity, and biogeochemical profiles.
+
+-----
+
+## 🛠️ Tech Stack
+
+### **Frontend (Client)**
+
+Built with modern React ecosystem tools for performance and interactivity.
+
+* **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
+* **Language**: TypeScript / React 19
+* **Styling**: [Tailwind CSS](https://tailwindcss.com/) & [Shadcn/UI](https://ui.shadcn.com/)
+* **Animations**: Framer Motion & GSAP
+* **3D Visualization**: @react-three/fiber, @react-three/drei
+* **State Management**: React Context API
+* **AI Integration**: Google Generative AI SDK
+
+### **Backend (Server)**
+
+A robust Python backend handling data processing and AI logic.
+
+* **Framework**: [FastAPI](https://fastapi.tiangolo.com/)
+* **Server**: Uvicorn
+* **Data Processing**: Pandas, Xarray (for NetCDF), NumPy, SciPy
+* **Database**: SQLite
+* **AI/ML**: FAISS (Vector DB for similarity search), Custom NLP-to-SQL logic
+
+-----
+
+## 📂 Project Structure
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+FloatChat/
+├── public/                 # Static assets (images, textures, models)
+├── server/                 # Python FastAPI Backend
+│   ├── app/                # Application logic
+│   │   ├── ai_core.py      # LLM & Vector DB handling
+│   │   ├── database.py     # Database connection & queries
+│   │   ├── processing.py   # NetCDF & Dataframe processing
+│   │   └── visualizations.py # Map & Graph generation
+│   ├── main.py             # Server entry point
+│   ├── requirements.txt    # Python dependencies
+│   └── *.nc / *.db         # Local data storage
+├── src/                    # Next.js Frontend Source
+│   ├── app/                # App Router pages & layouts
+│   ├── components/         # React Components
+│   │   ├── ui/             # Shadcn reusable UI elements
+│   │   └── ...             # Feature components (Globe, Chat, etc.)
+│   ├── contexts/           # Global state providers (Auth)
+│   ├── hooks/              # Custom React hooks
+│   ├── lib/                # Utility functions
+│   └── styles/             # Global CSS & Tailwind config
+├── package.json            # Frontend dependencies
+├── tailwind.config.ts      # Tailwind configuration
+└── tsconfig.json           # TypeScript configuration
+````
 
-Secondly, run the server:
-1.  **Create a virtual environment:**
-    `python -m venv venv`
-    `source venv/bin/activate`
+## 🏁 Getting Started
 
-2.  **Install dependencies:**
-    `pip install -r requirements.txt`
+### Prerequisites
 
-3.  **Run the application:**
-    `uvicorn main:app --reload`
+  * Node.js (v18+)
+  * Python (v3.9+)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1.  **Clone the repository:**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+    ```bash
+    git clone [https://github.com/vishalbarai007/floatchat.git](https://github.com/vishalbarai007/floatchat.git)
+    cd floatchat
+    ```
 
-## Learn More
+2.  **Setup Backend:**
 
-To learn more about Next.js, take a look at the following resources:
+    ```bash
+    cd server
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    pip install -r requirements.txt
+    uvicorn main:app --reload
+    ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3.  **Setup Frontend:**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+    ```bash
+    # Open a new terminal in the root directory
+    npm install
+    npm run dev
+    ```
 
-## Deploy on Vercel
+-----
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Built with 💙 by Jr. Coding Saints**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
