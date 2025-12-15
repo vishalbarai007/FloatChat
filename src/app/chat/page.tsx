@@ -1,366 +1,339 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useAuth } from "@/src/contexts/auth-context"
-import { useRouter } from "next/navigation"
-import { ChatMessage } from "@/src/components/chat-message"
-import { ChatInput } from "@/src/components/chat-input"
-import { ChatHistorySidebar } from "@/src/components/chat-history-sidebar"
-import { QuickExamplesSidebar } from "@/src/components/quick-examples-sidebar"
-import { Card, CardContent } from "@/src/components/ui/card"
-import { Button } from "@/src/components/ui/button"
-import { ScrollArea } from "@/src/components/ui/scroll-area"
-import { Badge } from "@/src/components/ui/badge"
-import { Menu, Lightbulb, Sparkles, TrendingUp, BarChart3 } from "lucide-react"
-import { Navbar } from "@/src/components/navbar"
+import { useState, useRef, useEffect } from "react";
+import { ChatMessage } from "@/src/components/chat-message";
+import { ChatInput } from "@/src/components/chat-input";
+import { ChatHistorySidebar } from "@/src/components/chat-history-sidebar";
+import { QuickExamplesSidebar } from "@/src/components/quick-examples-sidebar";
+import { Card, CardContent } from "@/src/components/ui/card";
+import { Button } from "@/src/components/ui/button";
+import { ScrollArea } from "@/src/components/ui/scroll-area";
+import { Badge } from "@/src/components/ui/badge";
+import { Menu, Lightbulb, Sparkles, TrendingUp, BarChart3, Send, Loader2 } from "lucide-react";
+import { Navbar } from "@/src/components/navbar";
 
 interface Message {
-  id: string
-  content: string
-  isUser: boolean
-  timestamp: string
-}
-
-interface ChatHistoryItem {
-  id: string
-  title: string
-  date: string
-  messages: Message[]
+	id: string;
+	content: string;
+	isUser: boolean;
+	timestamp: string;
+	isHtml?: boolean;
 }
 
 export default function ChatPage() {
-  const { isAuthenticated, user } = useAuth()
-  const router = useRouter()
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      content:
-        'Hello! I\'m your AI assistant for exploring ARGO ocean data. You can ask me questions like:\n\n• "Show me temperature profiles in the North Atlantic"\n• "What are the salinity levels near the equator?"\n• "Find BGC data from the last 6 months"\n\nHow can I help you today?',
-      isUser: false,
-      timestamp: new Date().toLocaleTimeString(),
-    },
-  ])
-  const [isLoading, setIsLoading] = useState(false)
-  const [showChatHistory, setShowChatHistory] = useState(false)
-  const [showQuickExamples, setShowQuickExamples] = useState(false)
-  const [activeChat, setActiveChat] = useState<string>("1")
-  const [queryCount, setQueryCount] = useState(0)
-  const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([])
+	const [messages, setMessages] = useState<Message[]>([
+		{
+			id: "1",
+			content:
+				"Hello! I'm your AI assistant for exploring ocean data. Please upload a NetCDF file first, then ask me a question about it.",
+			isUser: false,
+			timestamp: new Date().toLocaleTimeString(),
+		},
+	]);
+	const [isLoading, setIsLoading] = useState(false);
+	const [showChatHistory, setShowChatHistory] = useState(false);
+	const [showQuickExamples, setShowQuickExamples] = useState(false);
+	const [inputValue, setInputValue] = useState("");
+	const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push("/login")
-    }
-  }, [isAuthenticated, router])
+	// Auto-scroll to bottom when new messages are added
+	useEffect(() => {
+		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+	}, [messages]);
 
-  useEffect(() => {
-    // Load chat history for authenticated users
-    if (isAuthenticated && user && user.type !== "guest") {
-      const savedHistory = localStorage.getItem("ocean-platform-chat-history")
-      if (savedHistory) {
-        const history = JSON.parse(savedHistory)
-        if (history.messages) {
-          setMessages(history.messages)
-        }
-        if (history.queryCount) {
-          setQueryCount(history.queryCount)
-        }
-      }
+	const handleSendMessage = async (content: string) => {
+		if (!content.trim()) return;
 
-      const savedChats = localStorage.getItem("ocean-platform-chat-list")
-      if (savedChats) {
-        setChatHistory(JSON.parse(savedChats))
-      }
-    }
-  }, [isAuthenticated, user])
+		const userMessage: Message = {
+			id: Date.now().toString(),
+			content,
+			isUser: true,
+			timestamp: new Date().toLocaleTimeString(),
+		};
 
-  const saveToHistory = (newMessages: Message[], newQueryCount: number) => {
-    if (user && user.type !== "guest") {
-      localStorage.setItem(
-        "ocean-platform-chat-history",
-        JSON.stringify({
-          messages: newMessages,
-          queryCount: newQueryCount,
-        }),
-      )
-    }
-  }
+		const newMessages = [...messages, userMessage];
+		setMessages(newMessages);
+		setIsLoading(true);
+		setInputValue("");
 
-  const saveChatList = (chats: ChatHistoryItem[]) => {
-    localStorage.setItem("ocean-platform-chat-list", JSON.stringify(chats))
-    setChatHistory(chats)
-  }
+		try {
+			const formData = new FormData();
+			formData.append("query", content);
 
-  if (!isAuthenticated) {
-    return null
-  }
+			const response = await fetch(
+				"http://127.0.0.1:8000/chatbot-response",
+				{
+					method: "POST",
+					body: formData,
+				},
+			);
 
-  const handleSendMessage = async (content: string) => {
-    // Check query limits for guest users
-    if (user?.type === "guest" && queryCount >= 5) {
-      const limitMessage: Message = {
-        id: Date.now().toString(),
-        content:
-          "You've reached the query limit for guest users. Please sign up for a free account to continue chatting with unlimited queries!",
-        isUser: false,
-        timestamp: new Date().toLocaleTimeString(),
-      }
-      setMessages((prev) => [...prev, limitMessage])
-      return
-    }
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(
+					errorData.detail || "Failed to get AI response",
+				);
+			}
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content,
-      isUser: true,
-      timestamp: new Date().toLocaleTimeString(),
-    }
+			const contentType = response.headers.get("content-type");
+			let aiMessage: Message;
 
-    const newMessages = [...messages, userMessage]
-    setMessages(newMessages)
-    setIsLoading(true)
+			if (contentType && contentType.includes("text/html")) {
+				const htmlContent = await response.text();
+				aiMessage = {
+					id: (Date.now() + 1).toString(),
+					content: htmlContent,
+					isUser: false,
+					timestamp: new Date().toLocaleTimeString(),
+					isHtml: true,
+				};
+			} else {
+				const data = await response.json();
+				const messageContent =
+					data.message || "No data found for this query.";
+				const preview = data.preview
+					? `\n\n**Data Preview:**\n\`\`\`json\n${JSON.stringify(
+							data.preview,
+							null,
+							2,
+						)}\n\`\`\``
+					: "";
 
-    const newQueryCount = queryCount + 1
-    setQueryCount(newQueryCount)
+				aiMessage = {
+					id: (Date.now() + 1).toString(),
+					content: messageContent + preview,
+					isUser: false,
+					timestamp: new Date().toLocaleTimeString(),
+				};
+			}
 
-    // --- Save chat in sidebar list ---
-    const newChat: ChatHistoryItem = {
-      id: Date.now().toString(),
-      title: content.length > 40 ? content.slice(0, 40) + "..." : content,
-      date: "Just now",
-      messages: newMessages,
-    }
-    saveChatList([...chatHistory, newChat])
+			setMessages((prevMessages) => [...prevMessages, aiMessage]);
+		} catch (error: any) {
+			console.error("Chat error:", error);
 
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: content,
-          userType: user?.type || "guest",
-        }),
-      })
+			const errorMessage: Message = {
+				id: (Date.now() + 1).toString(),
+				content: `I apologize, but an error occurred. Please ensure the backend is running and data has been uploaded.\n\n**Error:** ${error.message}`,
+				isUser: false,
+				timestamp: new Date().toLocaleTimeString(),
+			};
 
-      if (!response.ok) {
-        throw new Error("Failed to get AI response")
-      }
+			setMessages((prevMessages) => [...prevMessages, errorMessage]);
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
-      const data = await response.json()
+	return (
+		<div className="h-screen flex flex-col bg-[#001222]">
+			{/* Professional Navbar */}
+			<Navbar />
 
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: data.message,
-        isUser: false,
-        timestamp: new Date().toLocaleTimeString(),
-      }
+			{/* Main Container */}
+			<div className="flex flex-1 relative overflow-hidden">
+				{/* Sidebars */}
+				<ChatHistorySidebar
+					isOpen={showChatHistory}
+					onClose={() => setShowChatHistory(false)}
+					onNewChat={() => {
+						setMessages([
+							{
+								id: "1",
+								content:
+									"Hello! I'm your AI assistant for exploring ocean data. Please upload a NetCDF file first, then ask me a question about it.",
+								isUser: false,
+								timestamp: new Date().toLocaleTimeString(),
+							},
+						]);
+					}}
+					onSelectChat={(chatId: string) => {
+						console.log("Selected chat:", chatId);
+					}}
+					activeChat={""}
+					chatHistory={[]}
+				/>
+				<QuickExamplesSidebar
+					isOpen={showQuickExamples}
+					onClose={() => setShowQuickExamples(false)}
+					onSelectExample={(example: string) => {
+						setInputValue(example);
+						setShowQuickExamples(false);
+					}}
+				/>
 
-      const finalMessages = [...newMessages, aiMessage]
-      setMessages(finalMessages)
-      setIsLoading(false)
+				{/* Main Chat Container */}
+				<div className="flex-1 flex flex-col max-w-5xl mx-auto w-full px-4 py-6 overflow-hidden">
+					{/* Header Buttons */}
+					<div className="flex items-center justify-between mb-4 flex-shrink-0">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => setShowChatHistory(true)}
+							className="flex items-center gap-2"
+							style={{
+								backgroundColor: '#775253',
+								color: '#e5cdc8',
+								borderColor: '#775253'
+							}}
+						>
+							<Menu className="w-4 h-4" />
+							Chat History
+						</Button>
 
-      // Save to history
-      saveToHistory(finalMessages, newQueryCount)
-    } catch (error) {
-      console.error("Chat error:", error)
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => setShowQuickExamples(true)}
+							className="flex items-center gap-2"
+							style={{
+								backgroundColor: '#775253',
+								color: '#e5cdc8',
+								borderColor: '#775253'
+							}}
+						>
+							<Lightbulb className="w-4 h-4" />
+							Quick Examples
+						</Button>
+					</div>
 
-      // Fallback error message
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content:
-          "I apologize, but I'm having trouble connecting to the AI service right now. Please try again in a moment.",
-        isUser: false,
-        timestamp: new Date().toLocaleTimeString(),
-      }
+					{/* Messages Area */}
+					<div
+						className="flex-1 rounded-2xl shadow-lg overflow-hidden mb-4"
+						style={{ backgroundColor: '#1a1a1a' }}
+					>
+						<ScrollArea className="h-full">
+							<div className="p-6 space-y-6">
+								{messages.map((message) => (
+									<div
+										key={message.id}
+										className={`flex ${
+											message.isUser
+												? "justify-end"
+												: "justify-start"
+										}`}
+									>
+										<div className="flex gap-3 max-w-[80%]">
+											{!message.isUser && (
+												<div
+													className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-sm"
+													style={{
+														backgroundColor: '#0a8754',
+														color: 'white'
+													}}
+												>
+													<span className="text-sm font-semibold">AI</span>
+												</div>
+											)}
+											<div className="flex flex-col gap-1">
+												<div
+													className="rounded-2xl px-5 py-3 shadow-sm"
+													style={{
+														backgroundColor: message.isUser
+															? '#004f2d'
+															: '#775253',
+														color: message.isUser
+															? '#e5cdc8'
+															: 'white'
+													}}
+												>
+													{message.isHtml ? (
+														<div dangerouslySetInnerHTML={{ __html: message.content }} />
+													) : (
+														<div className="whitespace-pre-wrap leading-relaxed">
+															{message.content}
+														</div>
+													)}
+												</div>
+												<span
+													className="text-xs px-2"
+													style={{ color: '#e5cdc8', opacity: 0.6 }}
+												>
+													{message.timestamp}
+												</span>
+											</div>
+											{message.isUser && (
+												<div
+													className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-sm"
+													style={{
+														backgroundColor: '#0a8754',
+														color: 'white'
+													}}
+												>
+													<span className="text-sm font-semibold">U</span>
+												</div>
+											)}
+										</div>
+									</div>
+								))}
+								{isLoading && (
+									<div className="flex justify-start">
+										<div className="flex gap-3 max-w-[80%]">
+											<div
+												className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 shadow-sm"
+												style={{
+													backgroundColor: '#0a8754',
+													color: 'white'
+												}}
+											>
+												<span className="text-sm font-semibold">AI</span>
+											</div>
+											<div
+												className="rounded-2xl px-5 py-3 shadow-sm flex items-center gap-2"
+												style={{
+													backgroundColor: '#775253',
+													color: 'white'
+												}}
+											>
+												<Loader2 className="w-4 h-4 animate-spin" />
+												<span>Analyzing your query...</span>
+											</div>
+										</div>
+									</div>
+								)}
+								<div ref={messagesEndRef} />
+							</div>
+						</ScrollArea>
+					</div>
 
-      const finalMessages = [...newMessages, errorMessage]
-      setMessages(finalMessages)
-      setIsLoading(false)
-      saveToHistory(finalMessages, newQueryCount)
-    }
-  }
-
-  const handleNewChat = () => {
-    const welcomeMessage: Message = {
-      id: "new-1",
-      content:
-        'Hello! I\'m your AI assistant for exploring ARGO ocean data. You can ask me questions like:\n\n• "Show me temperature profiles in the North Atlantic"\n• "What are the salinity levels near the equator?"\n• "Find BGC data from the last 6 months"\n\nHow can I help you today?',
-      isUser: false,
-      timestamp: new Date().toLocaleTimeString(),
-    }
-
-    setMessages([welcomeMessage])
-    setActiveChat("new")
-    setShowChatHistory(false)
-
-    // Save new chat
-    saveToHistory([welcomeMessage], queryCount)
-  }
-
-  const handleSelectChat = (chatId: string) => {
-    setActiveChat(chatId)
-    const selected = chatHistory.find((chat) => chat.id === chatId)
-    if (selected) {
-      setMessages(selected.messages)
-    }
-    setShowChatHistory(false)
-  }
-
-  const handleSelectExample = (example: string) => {
-    handleSendMessage(example)
-    setShowQuickExamples(false)
-  }
-
-  const getQueryLimitInfo = () => {
-    if (!user) return null
-
-    switch (user.type) {
-      case "guest":
-        return {
-          current: queryCount,
-          limit: 5,
-          color: queryCount >= 4 ? "destructive" : "secondary",
-        }
-      case "normal":
-        return {
-          current: queryCount,
-          limit: 100,
-          color: queryCount >= 90 ? "destructive" : "default",
-        }
-      case "premium":
-        return null // Unlimited
-      default:
-        return null
-    }
-  }
-
-  const queryLimitInfo = getQueryLimitInfo()
-
-  return (
-    <div className="h-[100vh] bg-background">
-      <Navbar />
-
-      <div className="relative flex justify-center items-center p-10">
-        {/* Chat History Sidebar */}
-        <ChatHistorySidebar
-          isOpen={showChatHistory}
-          onClose={() => setShowChatHistory(false)}
-          onNewChat={handleNewChat}
-          onSelectChat={handleSelectChat}
-          activeChat={activeChat}
-          chatHistory={chatHistory}
-        />
-
-        {/* Quick Examples Sidebar */}
-        <QuickExamplesSidebar
-          isOpen={showQuickExamples}
-          onClose={() => setShowQuickExamples(false)}
-          onSelectExample={handleSelectExample}
-        />
-
-        {/* Main Chat Area */}
-        <div className="container max-w-6xl py-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowChatHistory(true)}
-                className="flex items-center gap-2"
-              >
-                <Menu className="w-4 h-4" />
-                Chat History
-              </Button>
-
-              {/* User type and query limit badge */}
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="capitalize">
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  {user?.type} User
-                </Badge>
-
-                {queryLimitInfo && (
-                  <Badge variant={queryLimitInfo.color as any}>
-                    {queryLimitInfo.current}/{queryLimitInfo.limit} queries
-                  </Badge>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowQuickExamples(true)}
-                className="flex items-center gap-2"
-              >
-                <Lightbulb className="w-4 h-4" />
-                Quick Examples
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex flex-col h-[calc(100vh-12rem)]">
-            <Card className="flex-1 flex flex-col">
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4 max-w-4xl mx-auto">
-                  {messages.map((message) => (
-                    <ChatMessage
-                      key={message.id}
-                      message={message.content}
-                      isUser={message.isUser}
-                      timestamp={message.timestamp}
-                    >
-                      {/* Sample data visualization placeholder */}
-                      {!message.isUser && message.content.includes("visualizations") && (
-                        <Card className="bg-muted/50 mt-4">
-                          <CardContent className="p-4">
-                            <div className="h-32 bg-gradient-to-r from-chart-1 to-chart-2 rounded flex items-center justify-center text-white font-medium mb-3">
-                              Sample Ocean Data Visualization
-                            </div>
-                            <div className="grid grid-cols-3 gap-2 text-xs">
-                              <div className="flex items-center gap-1">
-                                <TrendingUp className="w-3 h-3 text-chart-1" />
-                                <span>Temperature Trend</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <BarChart3 className="w-3 h-3 text-chart-2" />
-                                <span>Depth Profile</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Sparkles className="w-3 h-3 text-chart-3" />
-                                <span>Data Quality</span>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </ChatMessage>
-                  ))}
-
-                  {isLoading && (
-                    <ChatMessage message="Analyzing your query and fetching ocean data..." isUser={false} />
-                  )}
-                </div>
-              </ScrollArea>
-
-              <div className="max-w-4xl mx-auto w-full">
-                <ChatInput
-                  onSendMessage={handleSendMessage}
-                  disabled={isLoading || (user?.type === "guest" && queryCount >= 5)}
-                  placeholder={
-                    user?.type === "guest" && queryCount >= 5
-                      ? "Query limit reached. Please sign up to continue..."
-                      : "Ask about ARGO floats and ocean data..."
-                  }
-                />
-              </div>
-            </Card>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+					{/* Input Area */}
+					<div
+						className="rounded-2xl shadow-lg p-4"
+						style={{ backgroundColor: '#1a1a1a' }}
+					>
+						<div className="flex items-center gap-3">
+							<input
+								type="text"
+								value={inputValue}
+								onChange={(e) => setInputValue(e.target.value)}
+								onKeyPress={(e) => {
+									if (e.key === 'Enter' && !isLoading) {
+										handleSendMessage(inputValue);
+									}
+								}}
+								placeholder="Ask about the uploaded ocean data..."
+								disabled={isLoading}
+								className="flex-1 px-4 py-3 rounded-xl border-2 focus:outline-none focus:ring-2 transition-all"
+								style={{
+									borderColor: '#351431',
+									backgroundColor: '#2a2a2a',
+									color: '#e5cdc8'
+								}}
+							/>
+							<button
+								onClick={() => handleSendMessage(inputValue)}
+								disabled={isLoading || !inputValue.trim()}
+								className="p-3 rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+								style={{
+									backgroundColor: '#0a8754',
+									color: 'white'
+								}}
+							>
+								<Send className="w-5 h-5" />
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
 }
