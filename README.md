@@ -116,6 +116,44 @@ FloatChat/
 
 -----
 
+## 📖 Usage
+
+1.  **Open the App**: Go to [http://localhost:3000](http://localhost:3000).
+2.  **Upload Data**: Navigate to the **"Upload Data"** page and upload a NetCDF (`.nc`) file (e.g., ARGO float data).
+3.  **Start Chatting**: Go to the **"Chat"** page. Ensure the backend is running.
+    * *Example Query*: "Show me the temperature profile for the last month."
+    * *Example Query*: "Map the location of the floats."
+4.  **Explore Globe**: Visit the **"Globe"** tab to see the 3D representation of data points.
+
+-----
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1.  **Fork the project.**
+2.  **Create your feature branch:**
+    ```bash
+    git checkout -b feature/AmazingFeature
+    ```
+3.  **Commit your changes:**
+    ```bash
+    git commit -m 'Add some AmazingFeature'
+    ```
+4.  **Push to the branch:**
+    ```bash
+    git push origin feature/AmazingFeature
+    ```
+5.  **Open a Pull Request.**
+
+-----
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+
+
 **Built with 💙 by Jr. Coding Saints**
 
 
